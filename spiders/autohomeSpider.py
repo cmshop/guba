@@ -56,25 +56,29 @@ class autohomeSpider(scrapy.Spider):
                 yield Request(url=final_url,callback=self.parse_detail)
 
     def parse_detail(self,response):
-        blocks_rule = '//div[@class="list"]/ul/li'
-        blocks = response.xpath(blocks_rule)
-        item = AutoHomeItem()
-        cat_name = self.get_data(response.xpath('//li[@class="tab-item current"]/a/text()').extract(),0)
-        address = self.get_data(response.xpath('//span[@id="btnSelectCity"]/text()[1]').extract(),0)
-        if blocks:
-            for block in blocks:
-                item['cat_id'] = self.get_data(re.findall(re.compile('list/(\d+)-'),response.url),0)
-                item['cat_name'] = cat_name
-                item['address'] = address.replace('\n','').strip()
-                item['product_price_current'] =self.get_data(response.xpath('.//div[@class="carbox-info"]/span/text()').extract(),0)
-                item['product_price_origion'] = self.get_data(response.xpath('.//del/text()').extract(),0)
-                item['product_title'] = self.get_data(response.xpath('.//div[@class="carbox-title"]/@title').extract(),0)
-                item['sales'] = self.get_data(response.xpath('.//div[@class="carbox-number"]/span/text()').extract(),0)
-                item['flag'] = self.flag
-                item['crawler_time'] = str(time.time())
-                self.write2file(item)
-        else:
-            print 'this page has no blocks! %s'%response.url
+        try:
+            blocks_rule = '//div[@class="list"]/ul/li'
+            blocks = response.xpath(blocks_rule)
+            item = AutoHomeItem()
+            cat_name = self.get_data(response.xpath('//li[@class="tab-item current"]/a/text()').extract(),0)
+            address = self.get_data(response.xpath('//span[@id="btnSelectCity"]/text()[1]').extract(),0)
+            if blocks:
+                for block in blocks:
+                    item['cat_id'] = self.get_data(re.findall(re.compile('list/(\d+)-'),response.url),0)
+                    item['cat_name'] = cat_name
+                    item['address'] = address.replace('\n','').strip()
+                    item['product_price_current'] =self.get_data(block.xpath('.//div[@class="carbox-info"]/span/text()').extract(),0)
+                    item['product_price_origion'] = self.get_data(block.xpath('.//del/text()').extract(),0)
+                    item['product_title'] = self.get_data(block.xpath('.//div[@class="carbox-title"]/@title').extract(),0)
+                    item['sales'] = self.get_data(block.xpath('.//div[@class="carbox-number"]/span/text()').extract(),0)
+                    item['product_id'] = self.get_data(re.findall(re.compile('detail/(.*?).html'),self.get_data(block.xpath('.//a/@href').extract(),0)),0)
+                    item['flag'] = self.flag
+                    item['crawler_time'] = str(time.time())
+                    self.write2file(item)
+            else:
+                print 'this page has no blocks! %s'%response.url
+        except Exception,e:
+            print 'parse_detail err: ',str(e)
 
     def write2file(self,dic):
         tmp = ''

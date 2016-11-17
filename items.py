@@ -89,5 +89,6 @@ class AutoHomeItem(scrapy.Item):
     product_price_current = scrapy.Field()
     product_title = scrapy.Field()
     sales = scrapy.Field()
+    product_id = scrapy.Field()
     flag = scrapy.Field()
     crawler_time = scrapy.Field()

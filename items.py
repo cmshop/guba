@@ -58,3 +58,36 @@ class DuTiebaItem(scrapy.Item):
     attention_num = scrapy.Field()
     article_num = scrapy.Field()
     flag = scrapy.Field()
+
+class KalLaItem(scrapy.Item):
+    cat_id = scrapy.Field()
+    cat_name = scrapy.Field()
+    product_id =scrapy.Field()
+    product_title = scrapy.Field()
+    product_price_origion = scrapy.Field()
+    product_price_current = scrapy.Field()
+    product_comment_num = scrapy.Field()
+    product_selfflag = scrapy.Field()
+    flag = scrapy.Field()
+    crawler_time = scrapy.Field()
+
+class YanXuanItem(scrapy.Item):
+    cat_id = scrapy.Field()
+    cat_name = scrapy.Field()
+    product_id =scrapy.Field()
+    product_title = scrapy.Field()
+    product_price_current = scrapy.Field()
+    product_comment_num = scrapy.Field()
+    flag = scrapy.Field()
+    crawler_time = scrapy.Field()
+
+class AutoHomeItem(scrapy.Item):
+    cat_id = scrapy.Field()
+    cat_name = scrapy.Field()
+    address = scrapy.Field()
+    product_price_origion = scrapy.Field()
+    product_price_current = scrapy.Field()
+    product_title = scrapy.Field()
+    sales = scrapy.Field()
+    flag = scrapy.Field()
+    crawler_time = scrapy.Field()

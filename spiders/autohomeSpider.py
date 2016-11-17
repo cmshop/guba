@@ -7,11 +7,13 @@ import re
 import time
 import codecs
 import math
+import json
 
 class autohomeSpider(scrapy.Spider):
     name = 'autohomeSpider'
     allowed_domain = ['autohome.com.cn']
-    flag = time.strftime('%Y-%m-%d_%H', time.localtime(time.time()))
+    # download_delay = 5
+    flag = time.strftime('%Y-%m-%d', time.localtime(time.time()))
     start_urls = ['http://mall.autohome.com.cn/index.html']
     prefix_url = 'http://mall.autohome.com.cn'
     file_name = 'autohome' + time.strftime('%Y-%m-%d %H', time.localtime(time.time())) + '.txt'
@@ -20,8 +22,8 @@ class autohomeSpider(scrapy.Spider):
         cat_urls =  ['http://mall.autohome.com.cn/list/2-500100-0-0-0-0-0-0-0-1.html?factoryId=0&minPrice=-1&maxPrice=-1&stageTag=0&importTag=0&double11Tag=0&prefix=&dataSource=',
                   'http://mall.autohome.com.cn/list/1-110100-0-0-0-0-0-0-0-1.html?factoryId=0&minPrice=-1&maxPrice=-1&stageTag=0&importTag=0&double11Tag=0&prefix=&dataSource=',
                   'http://mall.autohome.com.cn/list/3-110100-0-0-0-0-0-0-0-1.html?factoryId=0&minPrice=-1&maxPrice=-1&stageTag=0&importTag=0&double11Tag=0&prefix=&dataSource=']
-        for cat_url in cat_urls:
-            yield Request(url=cat_url,callback=self.parse_address)
+        # for cat_url in cat_urls:
+        yield Request(url=cat_urls[0],callback=self.parse_address)
 
     def parse_address(self,response):
         address_rule = '//div[@class="selectcity-content"]/dl[@class="fn-clear"]/dd/a/@id'
@@ -71,14 +73,29 @@ class autohomeSpider(scrapy.Spider):
                     item['product_price_origion'] = self.get_data(block.xpath('.//del/text()').extract(),0)
                     item['product_title'] = self.get_data(block.xpath('.//div[@class="carbox-title"]/@title').extract(),0)
                     item['sales'] = self.get_data(block.xpath('.//div[@class="carbox-number"]/span/text()').extract(),0)
-                    item['product_id'] = self.get_data(re.findall(re.compile('detail/(.*?).html'),self.get_data(block.xpath('.//a/@href').extract(),0)),0)
+                    item['product_id'] = self.get_data(re.findall(re.compile('(\d*-\d*-\d*)'),self.get_data(block.xpath('.//a/@href').extract(),0)),0)
                     item['flag'] = self.flag
                     item['crawler_time'] = str(time.time())
-                    self.write2file(item)
+                    if item['cat_id'] != '2':
+                        self.write2file(item)
+                    else:
+                        itemId = item['product_id'].split('-')[0]
+                        ajax_url = 'http://mall.autohome.com.cn/http/data.html?data[_host]=http://mall.api.autohome.com.cn/item/price/getPriceForList&data[_appid]=mall&data[itemIds]=%s&data[platform]=1&data[isReturnOtherPlatform]=false'%itemId
+                        meta_dic = {'item':item}
+                        yield Request(url=ajax_url,meta=meta_dic,callback=self.parse_price)
             else:
                 print 'this page has no blocks! %s'%response.url
         except Exception,e:
             print 'parse_detail err: ',str(e)
+
+    def parse_price(self,response):
+        item = response.meta['item']
+        try:
+            ajax_data = json.loads(response.body)
+            item['product_price_current'] = str(ajax_data['result'][0]['item']['price'])
+            self.write2file(item)
+        except Exception,e:
+            print 'parse_price err: ',str(e)
 
     def write2file(self,dic):
         tmp = ''
@@ -88,7 +105,7 @@ class autohomeSpider(scrapy.Spider):
             else:
                 tmp  += dic[value].replace('\n','') + '\n'
         try:
-            with codecs.open('D:/%s' % self.file_name, 'a', 'utf-8') as f:
+            with codecs.open('/mnt/scrapyPlat/saveFiles/autohome_mall/%s' % self.file_name, 'a', 'utf-8') as f: # /mnt/scrapyPlat/saveFiles/ /mnt/scrapyPlat/saveFiles/autohome_mall
                 f.write(tmp)
         except :
             pass

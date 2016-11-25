@@ -8,6 +8,7 @@ import time
 import codecs
 import math
 import json
+import requests
 
 class autohomeSpider(scrapy.Spider):
     name = 'autohomeSpider'
@@ -58,44 +59,55 @@ class autohomeSpider(scrapy.Spider):
                 yield Request(url=final_url,callback=self.parse_detail)
 
     def parse_detail(self,response):
-        try:
-            blocks_rule = '//div[@class="list"]/ul/li'
-            blocks = response.xpath(blocks_rule)
-            item = AutoHomeItem()
-            cat_name = self.get_data(response.xpath('//li[@class="tab-item current"]/a/text()').extract(),0)
-            address = self.get_data(response.xpath('//span[@id="btnSelectCity"]/text()[1]').extract(),0)
-            if blocks:
-                for block in blocks:
-                    item['cat_id'] = self.get_data(re.findall(re.compile('list/(\d+)-'),response.url),0)
-                    item['cat_name'] = cat_name
-                    item['address'] = address.replace('\n','').strip()
-                    item['product_price_current'] =self.get_data(block.xpath('.//div[@class="carbox-info"]/span/text()').extract(),0)
-                    item['product_price_origion'] = self.get_data(block.xpath('.//del/text()').extract(),0)
-                    item['product_title'] = self.get_data(block.xpath('.//div[@class="carbox-title"]/@title').extract(),0)
-                    item['sales'] = self.get_data(block.xpath('.//div[@class="carbox-number"]/span/text()').extract(),0)
-                    item['product_id'] = self.get_data(re.findall(re.compile('(\d*-\d*-\d*)'),self.get_data(block.xpath('.//a/@href').extract(),0)),0)
-                    item['flag'] = self.flag
-                    item['crawler_time'] = str(time.time())
-                    if item['cat_id'] != '2':
-                        self.write2file(item)
-                    else:
-                        itemId = item['product_id'].split('-')[0]
-                        ajax_url = 'http://mall.autohome.com.cn/http/data.html?data[_host]=http://mall.api.autohome.com.cn/item/price/getPriceForList&data[_appid]=mall&data[itemIds]=%s&data[platform]=1&data[isReturnOtherPlatform]=false'%itemId
-                        meta_dic = {'item':item}
-                        yield Request(url=ajax_url,meta=meta_dic,callback=self.parse_price)
-            else:
-                print 'this page has no blocks! %s'%response.url
-        except Exception,e:
-            print 'parse_detail err: ',str(e)
+        # try:
+        blocks_rule = '//div[@class="list"]/ul/li'
+        blocks = response.xpath(blocks_rule)
+        item = AutoHomeItem()
+        cat_name = self.get_data(response.xpath('//li[@class="tab-item current"]/a/text()').extract(), 0)
+        address = self.get_data(response.xpath('//span[@id="btnSelectCity"]/text()[1]').extract(), 0)
+        if blocks:
+            for block in blocks:
+                item['cat_id'] = self.get_data(re.findall(re.compile('list/(\d+)-'), response.url), 0)
+                item['cat_name'] = cat_name
+                item['address'] = address.replace('\n', '').strip()
+                item['product_price_current'] = self.get_data(
+                    block.xpath('.//div[@class="carbox-info"]/span/text()').extract(), 0)
+                item['product_price_origion'] = self.get_data(block.xpath('.//del/text()').extract(), 0)
+                item['product_title'] = self.get_data(block.xpath('.//div[@class="carbox-title"]/@title').extract(), 0)
+                item['sales'] = self.get_data(block.xpath('.//div[@class="carbox-number"]/span/text()').extract(), 0)
+                item['product_id'] = self.get_data(
+                    re.findall(re.compile('(\d*-\d*-\d*)'), self.get_data(block.xpath('.//a/@href').extract(), 0)), 0)
+                item['flag'] = self.flag
+                item['crawler_time'] = str(time.time())
+                if item['cat_id'] != '2':
+                    self.write2file(item)
+                else:
+                    itemId = item['product_id'].split('-')[0]
+                    ajax_url = 'http://mall.autohome.com.cn/http/data.html?data[_host]=http://mall.api.autohome.com.cn/item/price/getPriceForList&data[_appid]=mall&data[itemIds]=%s&data[platform]=1&data[isReturnOtherPlatform]=false' % itemId
+                    # meta_dic = {'item':item}
+                    # yield Request(url=ajax_url,meta=meta_dic,callback=self.parse_price)
+                    # try:
+                    ajax_data = json.loads(requests.get(ajax_url).text)
+                    item['product_price_current'] = str(ajax_data['result'][0]['item']['price'])
+                    # finally:
+                    self.write2file(item)
+        else:
+            print 'this page has no blocks! %s' % response.url
+
+        # except Exception,e:
+        #     print 'parse_detail err: ',str(e)
 
     def parse_price(self,response):
         item = response.meta['item']
-        try:
-            ajax_data = json.loads(response.body)
-            item['product_price_current'] = str(ajax_data['result'][0]['item']['price'])
-            self.write2file(item)
-        except Exception,e:
-            print 'parse_price err: ',str(e)
+        # with codecs.open('D:/%s' % 'temp.txt', 'a', 'utf-8') as f:
+        #     f.write(response.body+'\n')
+        # try:
+            # ajax_data = json.loads(response.body)
+            # item['product_price_current'] = str(ajax_data['result'][0]['item']['price'])
+        # item['product_price_current'] = self.get_data(re.findall(re.compile('price":(.*?),'),response.body),0)
+        self.write2file(item)
+        # except Exception,e:
+        #     print 'parse_price err: ',str(e)
 
     def write2file(self,dic):
         tmp = ''
@@ -105,7 +117,7 @@ class autohomeSpider(scrapy.Spider):
             else:
                 tmp  += dic[value].replace('\n','') + '\n'
         try:
-            with codecs.open('/mnt/scrapyPlat/saveFiles/autohome_mall/%s' % self.file_name, 'a', 'utf-8') as f: # /mnt/scrapyPlat/saveFiles/ /mnt/scrapyPlat/saveFiles/autohome_mall
+            with codecs.open('D:/%s' % self.file_name, 'a', 'utf-8') as f: # /mnt/scrapyPlat/saveFiles/ /mnt/scrapyPlat/saveFiles/autohome_mall
                 f.write(tmp)
         except :
             pass

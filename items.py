@@ -92,3 +92,25 @@ class AutoHomeItem(scrapy.Item):
     product_id = scrapy.Field()
     flag = scrapy.Field()
     crawler_time = scrapy.Field()
+
+class AutoHomePriceItem(scrapy.Item):
+    product_id = scrapy.Field()
+    product_price_current = scrapy.Field()
+    flag = scrapy.Field()
+    crawler_time = scrapy.Field()
+
+class CtripHotelItem(scrapy.Item):
+    hotel_id = scrapy.Field()
+    hotel_name = scrapy.Field()
+    nation_id = scrapy.Field()
+    nation_name = scrapy.Field()
+    city_id = scrapy.Field()
+    city_name = scrapy.Field()
+    hotel_score = scrapy.Field()
+    #hotel_scoretext = scrapy.Field()
+    hotel_newbook = scrapy.Field()
+    hotel_RMB = scrapy.Field()
+    hotel_empty = scrapy.Field()
+    hotel_star_desc = scrapy.Field()
+    flag = scrapy.Field()
+    crawler_time = scrapy.Field()

@@ -23,7 +23,7 @@ class autohomepriceSpider(scrapy.Spider):
 
     def parse(self, response):
         items = []
-        file_path = '/mnt/scrapyPlat/saveFiles/'
+        file_path = 'D:/'# /mnt/scrapyPlat/saveFiles/
         files_dir = os.listdir(file_path)
         for file_name in files_dir:
             if self.get_data(re.findall(re.compile(self.read_file_regex),file_name),0) != 'None':
@@ -63,7 +63,7 @@ class autohomepriceSpider(scrapy.Spider):
             else:
                 tmp  += dic[value].replace('\n','') + '\n'
         try:
-            with codecs.open('/mnt/scrapyPlat/saveFiles/autohome_mall/%s' % self.file_name, 'a', 'utf-8') as f: # /mnt/scrapyPlat/saveFiles/ /mnt/scrapyPlat/saveFiles/autohome_mall
+            with codecs.open('D:/%s' % self.file_name, 'a', 'utf-8') as f: # /mnt/scrapyPlat/saveFiles/ /mnt/scrapyPlat/saveFiles/autohome_mall
                 f.write(tmp)
         except :
             pass

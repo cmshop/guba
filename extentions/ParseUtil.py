@@ -6,13 +6,12 @@ import urllib2
 #from crawler import extsettings
 import re
 import time
-
+import codecs
 
 class xpathUtil():
 
     def __init__(self):
         pass
-
 
     @staticmethod
     def get_data(data, position):
@@ -20,6 +19,20 @@ class xpathUtil():
             return data[position]
         else:
             return None
+
+    @staticmethod
+    def write2file(self,dic):
+        tmp = ''
+        for index,value in enumerate(dic.keys()):
+            if index != len(dic.keys())-1:
+                tmp += (dic[value].decode() if isinstance(dic[value],str) else dic[value]).replace('\n','')+'&/#'
+            else:
+                tmp  += dic[value].replace('\n','') + '\n'
+        try:
+            with codecs.open('D:/%s' % self.file_name, 'a', 'utf-8') as f: # /mnt/scrapyPlat/saveFiles/
+                f.write(tmp)
+        except :
+            pass
 
     '''
     @staticmethod

@@ -114,3 +114,9 @@ class CtripHotelItem(scrapy.Item):
     hotel_star_desc = scrapy.Field()
     flag = scrapy.Field()
     crawler_time = scrapy.Field()
+
+class EastmoneyItem(scrapy.Item):
+    stk_name = scrapy.Field()
+    stk_code = scrapy.Field()
+    flag = scrapy.Field()
+    crawler_time = scrapy.Field()

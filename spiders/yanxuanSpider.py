@@ -12,7 +12,7 @@ class yanxuanSpider(scrapy.Spider):
     allowed_domain = ['you.163.com']
     file_name = 'yanxuan' + time.strftime('%Y-%m-%d %H', time.localtime(time.time())) + '.txt'
     flag = time.strftime('%Y-%m-%d_%H', time.localtime(time.time()))
-    #start_urls = ['http://you.163.com/?_stat_area=nav_1&_stat_referer=index']
+    #start_urls = ['http://you.163.com/?s_stat_area=nav_1&_stat_referer=index']
     start_urls = ['http://you.163.com/item/list?categoryId=1005000&_stat_area=nav_2&_stat_referer=index#sortType=2&descSorted=true&subCategoryId=1005000']
 
     def parse(self, response):
@@ -22,32 +22,32 @@ class yanxuanSpider(scrapy.Spider):
             yield Request(url=item,callback=self.parse_detail)
 
     def parse_detail(self,response):
-        item = YanXuanItem()
         blocks_rule = '//div[@class="m-product product-s j-product"]'
         blocks = response.xpath(blocks_rule)
         if blocks != 'None':
             for block in blocks:
-                item['flag'] = self.flag
-                item['cat_id'] = self.get_data(re.findall(re.compile('categoryId=(\d+)&'),response.url),0)
-                item['cat_name'] = self.get_data(block.xpath("//li[@class='j-nav-item nav-item active']/a/text()").extract(),0)
-                product_id = self.get_data(block.xpath('.//div[@class="hd"]/a/@href').extract(),0)
-                if product_id != 'None':
-                    product_id = self.get_data(re.findall(re.compile('id=(\d+)&'),product_id),0)
-                item['product_id'] = product_id
-                item['product_title'] = self.get_data(block.xpath('.//div[@class="hd"]/a/@title').extract(),0)
-                item['product_price_current'] = self.get_data(block.xpath('.//span/text()').extract(),0)
-                item['crawler_time'] = str(time.time())
                 product_url = self.get_data(block.xpath('.//div[@class="hd"]/a/@href').extract(), 0)
                 full_url = 'http://you.163.com' + product_url
-                yield Request(url=full_url,meta={'item':item},callback=self.get_num)
+                yield Request(url=full_url,callback=self.get_num) # ,meta={'item':item}
 
     def get_num(self,response):
-        item = response.meta['item']
-        num = self.get_data(response.xpath('//span[@class="num"]/text()').extract(),0)
-        if num != 'None':
-            num = self.get_data(re.findall(re.compile('(\d+)'),num),0)
-        item['product_comment_num'] = num
-        self.write2file(item)
+        item = YanXuanItem()
+        try:
+            item['flag'] = self.flag
+            cat_url = self.get_data(response.xpath('//div[@class="m-crumbs"]/a[2]/@href').extract(),0)
+            item['cat_id'] = self.get_data(re.findall(re.compile('categoryId=(\d+)'),cat_url),0)  if cat_url != 'None' else 'None'
+            item['cat_name'] = self.get_data(response.xpath('//div[@class="m-crumbs"]/a[2]/text()').extract(),0)
+            item['product_id'] = self.get_data(re.findall(re.compile('id=(\d+)&'),response.url),0)
+            item['product_title'] = self.get_data(response.xpath('//span[@class="z-cur"]/text()').extract(),0)
+            item['product_price_current'] = self.get_data(response.xpath('//span[@class="num j-retail-price"]/text()').extract(),0)
+            item['crawler_time'] = str(time.time())
+            num = self.get_data(response.xpath('//span[@class="num"]/text()').extract(),0)
+            if num != 'None':
+                num = self.get_data(re.findall(re.compile('(\d+)'),num),0)
+            item['product_comment_num'] = num
+            self.write2file(item)
+        except:
+            pass
 
     def write2file(self,dic):
         tmp = ''

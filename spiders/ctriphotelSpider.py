@@ -23,46 +23,54 @@ class ctriphotelSpider(scrapy.Spider):
         if nations != 'None':
             for each_nation in nations:
                 each_nation_url = each_nation.xpath('./@href').extract()[0]
-                each_nation_id = self.get_data(re.findall(re.compile('(country\d+)'),each_nation_url),0)
-                each_nation_name = each_nation.xpath('./text()').extract()[0]
-                meta_nation = {'nation':each_nation_name,'nation_id':each_nation_id}
-                yield Request(url=each_nation_url+'city/',meta=meta_nation,callback=self.parse_city)
+                # each_nation_id = self.get_data(re.findall(re.compile('(country\d+)'),each_nation_url),0)
+                # each_nation_name = each_nation.xpath('./text()').extract()[0]
+                # meta_nation = {'nation':each_nation_name,'nation_id':each_nation_id}
+                yield Request(url=each_nation_url+'city/',callback=self.parse_city) # meta=meta_nation,
 
     def parse_city(self,response):
         url_prefix = 'http://hotels.ctrip.com'
-        meta_city = response.meta
+        # meta_city = response.meta
         city_rule = '//ul[@class="other_city clearfix"]/li/a'
         cities = response.xpath(city_rule)
         if cities:
             for each_city in cities:
                 each_city_url = each_city.xpath('./@href').extract()[0]
-                each_city_id = self.get_data(re.findall(re.compile('/([a-z]+\d+)/{0,1}'),each_city_url),0)
-                each_city_name = each_city.xpath('./text()').extract()[0].replace(u'酒店','')
-                meta_city['city'] = each_city_name
-                meta_city['city_id'] = each_city_id
-                yield Request(url=url_prefix + each_city_url,meta=meta_city,callback=self.parse_page)
+                # each_city_id = self.get_data(re.findall(re.compile('/([a-z]+\d+)/{0,1}'),each_city_url),0)
+                # each_city_name = each_city.xpath('./text()').extract()[0].replace(u'酒店','')
+                # meta_city['city'] = each_city_name
+                # meta_city['city_id'] = each_city_id
+                yield Request(url=url_prefix + each_city_url,callback=self.parse_page) # meta=meta_city,
 
     def parse_page(self,response):
-        page_meta = response.meta
+        # page_meta = response.meta
         start_url = response.url
         page_list_rule = '//div[@class="c_page_list layoutfix"]/a/text()'
         page_list = response.xpath(page_list_rule).extract()
         if page_list:
             max_page = page_list[-1]
-            for each_page in range(1,int(max_page)):
+            for each_page in range(1,int(max_page)+1):
                 final_url = start_url + '/p' + str(each_page)
-                yield Request(url=final_url,meta=page_meta,callback=self.parse_detail)
+                yield Request(url=final_url,callback=self.parse_detail) # meta=page_meta,
 
     def parse_detail(self,response):
         all_room_rule = '//span[@class="total_htl_amount"]/text()[1]'
         not_empty_rule = '//span[@class="total_htl_amount"]/b/text()'
-        block_rule = '//div[@class="hotel_list"]/div/div/div/div[@class="hotel_message"]'
-        meta = response.meta
+        block_rule = '//div[@id="hotel_list_container"]/div[not(@id)][@class="hotel_list"]/div/div/div/div[@class="hotel_message"]'
+        # meta = response.meta
         all_room = self.get_data(response.xpath(all_room_rule).extract(),0)
         if all_room != 'None':
             all_room = self.get_data(re.findall(re.compile('\d+'),all_room),0)
         not_empty = self.get_data(response.xpath(not_empty_rule).extract(),0)
         hotel_empty = not_empty + '/' + all_room
+        nation_id = self.get_data(re.findall(re.compile('(country\d+)'),self.get_data(response.xpath('//div[@class="path_bar"]/a[2]/@href').extract(),0)),0)
+        nation_name = self.get_data(response.xpath('//div[@class="path_bar"]/a[2]/text()').extract(),0)
+        if nation_name != 'None':
+            nation_name = nation_name.strip()
+        city_id = self.get_data(re.findall(re.compile('/([a-z]+\d+)/{0,1}'),response.url),0)
+        city_name = self.get_data(response.xpath('//div[@class="path_bar"]/text()[3]').extract(),0)
+        if city_name != 'None':
+            city_name = city_name.replace('>','').replace(u'酒店','').strip()
         item = CtripHotelItem()
         blocks = response.xpath(block_rule)
         if blocks:
@@ -76,10 +84,10 @@ class ctriphotelSpider(scrapy.Spider):
                 item['hotel_RMB'] = self.get_data(each_block.xpath('.//span[@class="hotel_price_pos"]/text()').extract(),0)
                 item['hotel_star_desc'] = self.get_data(each_block.xpath('.//h2[@class="searchresult_name"]/span[2]/@title').extract(),0)
                 item['hotel_empty'] = hotel_empty
-                item['nation_id'] = meta.get('nation_id')
-                item['nation_name'] = meta.get('nation')
-                item['city_id'] = meta.get('city_id')
-                item['city_name'] = meta.get('city')
+                item['nation_id'] = nation_id
+                item['nation_name'] = nation_name
+                item['city_id'] = city_id
+                item['city_name'] = city_name
                 item['flag'] = self.flag
                 item['crawler_time'] = str(time.time())
 

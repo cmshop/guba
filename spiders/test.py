@@ -3,6 +3,9 @@
 import scrapy
 from items import AutoHomePriceItem
 from scrapy.http import Request
+from extentions.ParseUtil import xpathUtil
+
+
 
 class test(scrapy.Spider):
     name = 'test'

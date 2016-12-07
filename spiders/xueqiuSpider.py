@@ -8,22 +8,24 @@ import json
 import os,time
 from cleaner.timeformat import TimeFormat
 from settings import ROOT
+from random import randint
 
 class xueqiuSpider(Spider):
     name = 'xueqiuSpider'
     #allowed_domains = ['']
     start_urls = ['http://xueqiu.com/']
     codes = []
-    base_url_0 = 'http://xueqiu.com/statuses/search.json?count=10&comment=0&symbol='#SZ300104&hl=0&source=user&sort=time&page=1'
+    base_url_0 = 'http://xueqiu.com/statuses/search.json?count=20&comment=0&symbol='#SZ300104&hl=0&source=user&sort=time&page=1'
     base_url_1 = '&hl=0&source=user&sort=time&page='
 
-    crawl_time = time.strftime('%Y-%m-%d %H %M %S', time.localtime(time.time()))
+    crawl_time = time.strftime('%Y-%m-%d_%H', time.localtime(time.time()))
     crawl_time_stamp = time.time()
-    deadline = time.strftime('%Y-%m-%d', time.localtime(time.time() - 24*60*60)) + ' 15:00:00'
+    deadline = time.strftime('%Y-%m-%d %H', time.localtime(time.time() - 60*60)) + ':00:00'
+    endtime = time.strftime('%Y-%m-%d %H', time.localtime(time.time())) + ':00:00'
     #deadline = '2016-06-01 00:00:00'
     page_dic = {50:None,30:None,80:None,20:None,10:None,3:None}
-
-    path = ROOT + 'xueqiu/'
+    download_delay = randint(2,5)*0.1
+    path = ROOT + 'xueqiu/' + str(crawl_time) + '/'
     if not os.path.exists(path):
         os.mkdir(path)
     file_name = str(path) + 'xueqiu_' + str(crawl_time) + '.txt'
@@ -35,21 +37,22 @@ class xueqiuSpider(Spider):
         #codes = [('SZ300104','乐视')] # ,('SZ000001',u'平安银行')
         #codes = [('SZ300218','安利股份')]
         #codes = codes[0:5]
+
         for item in codes:
-            self.page_dic = {50:None,30:None,80:None,20:None,10:None,3:None}
+            self.page_dic = {50:None,30:None,20:None,10:None,3:None}
 
-            for i in self.page_dic.keys():
-                url = self.base_url_0 + item[0] + self.base_url_1 + str(i)
-                meta_temp = {'max':i,'item':item[0],'item_name':item[1]}
-                yield Request(url=url,meta=meta_temp,callback=self.get_max_page)
+            # for i in self.page_dic.keys():
+            #     url = self.base_url_0 + item[0] + self.base_url_1 + str(i)
+            #     meta_temp = {'max':i,'item':item[0],'item_name':item[1]}
+            #     yield Request(url=url,meta=meta_temp,callback=self.get_max_page)
 
-            '''
-            for i in range(1,max_page):
+            max_page = 2
+            for i in range(1,max_page+1):
                 url = self.base_url_0 + item[0] + self.base_url_1 + str(i)
                 meta_temp = {'max': i, 'item': item[0], 'item_name': item[1]}
                 #page += 1
                 yield Request(url=url,meta=meta_temp ,callback=self.parse_json)
-        '''
+
 
     def get_max_page(self,response):
         max_page = 100
@@ -124,7 +127,7 @@ class xueqiuSpider(Spider):
                     item['crawl_time'] = self.crawl_time
                     item['retweeted_status'] = retweeted_status
 
-                    if timeBefore > self.deadline:
+                    if timeBefore > self.deadline and timeBefore < self.endtime:
                         with open(self.file_name,'a') as f:
                             f.write(str(item['comm_id']) + ' ' + item['item'] + ' ' + item['item_name']+ ' ' + item['timeBefore'] + ' ' + item['reply_count'].encode( 'gbk') + '\n')
                         '''
